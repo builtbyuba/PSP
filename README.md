@@ -1,12 +1,12 @@
 # Pattern Structure Pro (PSP)
 
-Pattern Structure Pro is a TradingView Pine Script v6 indicator that brings chart patterns, swing structure, and price context into one considered layout. It supports standard **1H, 2H, 4H, and 1D** candlestick charts, with a clean **Stories** view for sharing analysis and a more detailed **Analysis** view for examining it.
+Pattern Structure Pro is a TradingView Pine Script v6 indicator that brings chart patterns, swing structure, and price context into one considered layout. It supports standard **1H, 2H, 4H, and 1D** candlestick charts, with **Analysis** as the primary view for examining structure and a clean **Stories** view for sharing it.
 
 ## Overview
 
-![PSP Stories view on BTCUSDT 4H](assets/screenshots/psp-stories.jpg)
+![PSP Analysis view on BTCUSDT 4H](assets/screenshots/psp-analysis.jpg)
 
-Stories view on **BITGET:BTCUSDT, 4H**: two local Double Tops, a historical trendline, weekly resistance, monthly references, a demand zone, and EMA 200. This is a fresh capture of the running indicator, not a manually annotated chart.
+Analysis view on **BITGET:BTCUSDT, 4H**: pattern states and confirmation timing alongside swing structure, shared 4H supply/demand zones, weekly/monthly references, and EMA 200. Stories offers a compact presentation of the same analysis tools.
 
 ## Features
 
@@ -148,4 +148,4 @@ PSP supports technical analysis and does not provide financial advice. Trading i
 
 Required Notice: Copyright © 2026 builtbyuba.
 
-The existing noncommercial licensing choice is retained: [PolyForm Noncommercial License 1.0.0](LICENSE). It does not grant permission to sell PSP or use it for purposes outside the license's permitted terms. Separate permission is required for commercial licensing. Including source in this private repository does not make the project open-source.
+The existing noncommercial licensing choice is retained: [PolyForm Noncommercial License 1.0.0](LICENSE). It does not grant permission to sell PSP or use it for purposes outside the license's permitted terms. Separate permission is required for commercial licensing. The repository is public for inspection and permitted noncommercial use. Public availability does not remove the noncommercial license or grant resale rights.
