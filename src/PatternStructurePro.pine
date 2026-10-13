@@ -25,7 +25,7 @@ string zoneSource = input.string("4H", "Zone source", options=["4H", "Chart"], g
 bool showLevels = input.bool(true, "Week / month levels", group=G_STRUCT, display=display.none)
 bool showTrendline = input.bool(true, "Confirmed swing trendline", group=G_STRUCT, display=display.none)
 bool showEMA200 = input.bool(true, "EMA 200", group=G_CONTEXT, display=display.none, tooltip="200-period EMA of close on the chart interval. Shows closed candles only and shares the price chart. No signals or future extension.")
-string viewMode = input.string("Stories", "View", options=["Stories", "Analysis"], group=G_STYLE, display=display.none)
+string viewMode = input.string("Analysis", "View", options=["Stories", "Analysis"], group=G_STYLE, display=display.none)
 int storiesPatternLimit = input.int(3, "Patterns in Stories", minval=1, maxval=3, group=G_STYLE, display=display.none, tooltip="Up to three distinct structures. Use one for a minimal phone screenshot.")
 string annotationStyle = input.string("Editorial", "Annotation style", options=["Editorial", "Technical"], group=G_STYLE, display=display.none, tooltip="Editorial uses historical reversal arches and compact names. Technical shows anchor geometry and full states.")
 string palette = input.string("Auto", "Chart theme", options=["Auto", "Light", "Dark"], group=G_STYLE, display=display.none)

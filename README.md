@@ -125,7 +125,7 @@ All six family switches default to **on**: **Double / Triple Top & Bottom**, **H
 
 | Input | Default | Controls |
 | --- | --- | --- |
-| View | Stories | Stories prioritizes clarity; Analysis adds states, timing, and more context. |
+| View | Analysis | Stories prioritizes clarity; Analysis adds states, timing, and more context. |
 | Patterns in Stories | 3 (1–3) | Maximum Stories pattern count. Analysis is capped at three. |
 | Annotation style | Editorial | Editorial uses reversal arches and compact captions in Stories; Technical uses anchor geometry and full states. Analysis uses anchor geometry in either style. |
 | Chart theme | Auto | Auto selects ink from the chart background; Light/Dark force the palette. |
