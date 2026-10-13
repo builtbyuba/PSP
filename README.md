@@ -12,7 +12,7 @@ Stories view on **BITGET:BTCUSDT, 4H**: two local Double Tops, a historical tren
 
 - **18 pattern variants:** Double and Triple Top/Bottom; Head & Shoulders and Inverse H&S; ascending, descending, and symmetrical triangles; rising and falling wedges; bullish and bearish flags and pennants; ascending and descending channels; and rectangles.
 - **Market structure:** optional HH, HL, LH, LL, EQH, and EQL labels. Closed-bar breaks are classified as BOS, CHoCH, or a neutral Break from the established swing structure.
-- **Price context:** swing-based supply/demand zones, previous week high/low/midpoint, previous month midpoint, and current month open. Editorial presentation labels the previous week high as Weekly Resistance.
+- **Price context:** confirmed 4H supply/demand zones shared across supported chart intervals, previous week high/low/midpoint, previous month midpoint, and current month open. Editorial presentation labels the previous week high as Weekly Resistance.
 - **Trend references:** a confirmed swing trendline that stops at its first closed-bar break, plus an optional 200-period EMA on the same price scale.
 - **Controlled presentation:** up to three distinct selected patterns, transparent zones, thin levels, priority-based labels, automatic light/dark colors, and bounded drawing storage. Lower-priority text is suppressed when it conflicts with important annotations.
 
@@ -31,7 +31,7 @@ The engine uses confirmed pivot highs and lows with equal left- and right-hand s
 | 4H | 3 closed bars / 12 hours | 4H candles |
 | 1D | 3 closed bars / 3 trading days | Daily candles |
 
-Switching the chart interval automatically recalculates the entire engine on that interval. Geometry windows, expiry, and confirmation are measured in **bars**, while price tolerances use that interval's ATR; they are not forced into a fixed 4H wall-clock duration. The 4H detection thresholds are preserved. Analysis captions show both the bar delay and its interval duration. For markets with session gaps, three daily bars can take longer than three calendar days.
+Switching the chart interval recalculates patterns, swing structure, trendlines, and EMA on that interval. Supply/demand zones use a shared **4H** source by default, so their price boundaries and source timestamps remain consistent across 1H, 2H, 4H, and 1D. Choose **Zone source: Chart** to restore interval-specific zones. Geometry windows, expiry, and confirmation are measured in **bars**, while price tolerances use that interval's ATR; they are not forced into a fixed 4H wall-clock duration. The 4H detection thresholds are preserved. Analysis captions show both the bar delay and its interval duration. For markets with session gaps, three daily bars can take longer than three calendar days.
 
 Reversal candidates compare three or five anchors for matching extremes, adequate intervening depth, prior price context, and—for head and shoulders—head prominence and shoulder timing. Double Top/Bottom detection also searches across minor intervening swings while rejecting an overtopping extreme or a separate central third contact.
 
@@ -51,7 +51,7 @@ Candidates receive a geometric quality score. The minimum-quality setting filter
 
 Unconfirmed reversals invalidate when price closes beyond the opposite extreme and buffer. Flags/pennants invalidate on a qualifying break against their impulse direction. Candidates also expire: channels/rectangles after 60 bars from their final anchor, other formations after 30 bars from detection, and reversals after a span-dependent 30–120 bars. Converging patterns expire on reaching their intersection. Invalid and expired candidates are excluded from the display; old candidates and finished patterns also have age limits.
 
-Supply/demand zones require at least 1.5 ATR departure from a confirmed swing. Their width derives from the pivot candle's wick/body relationship and is bounded to 0.2–1 ATR. A close beyond the far edge and buffer invalidates a zone; a touch alone does not. Overlapping same-side zones merge for display without changing their stored source geometry. Stories filters distant zones and presents one primary zone on each side where eligible zones exist; Analysis can show more.
+Supply/demand zones require at least 1.5 ATR departure from a confirmed swing. Their width derives from the pivot candle's wick/body relationship and is bounded to 0.2–1 ATR. A close beyond the far edge and buffer invalidates a zone; a touch alone does not. Overlapping same-side zones merge for display without changing their stored source geometry. In 4H source mode, detection, invalidation, expiry (300 source bars), relevance, and zone selection all use closed 4H data. Time-based drawing anchors preserve the source candle position across chart intervals. The 1D chart reads closed 4H intrabars; it does not wait for the daily candle to close. The open 4H candle does not change zone boundaries or validity. Stories filters distant zones and presents one primary zone on each side where eligible zones exist; Analysis can show more.
 
 ### Developing formations and historical drawings
 
@@ -63,7 +63,7 @@ PSP redraws the current selection rather than retaining every historical drawing
 
 ## Screenshots
 
-The images were captured on **13 October 2026**, directly in TradingView through the **Codex browser**, using the production source on BITGET:BTCUSDT. Browser screenshot clipping removes surrounding panels and toolbars; candles, price axes, labels, and drawings are unchanged. No patterns were manually added.
+The images were captured on **13 October 2026**, directly in TradingView, using the production source on BITGET:BTCUSDT. Browser screenshot clipping removes surrounding panels and toolbars; candles, price axes, labels, and drawings are unchanged. No patterns were manually added. Screenshots reflect the shared 4H zone version.
 
 ### Stories
 
@@ -81,7 +81,7 @@ The same market window in Analysis view shows anchor geometry, a Double Top mark
 
 [1H Analysis](assets/screenshots/psp-1h-analysis.jpg) · [2H Analysis](assets/screenshots/psp-2h-analysis.jpg) · [1D Analysis](assets/screenshots/psp-1d-analysis.jpg)
 
-These capture the same engine recalculated on each chart interval. A current window can legitimately have no selected pattern; the structure, zones, levels, and EMA still provide context. Confirmation timing is 3h, 6h, 12h, or 3d at the default swing strength. Live checks confirm runtime and rendering on the observed windows, not broad pattern-recognition accuracy across every historical period.
+These show chart-specific pattern and structure detection with the shared confirmed 4H zone layer. A current window can legitimately have no selected pattern; the structure, zones, levels, and EMA still provide context. Confirmation timing is 3h, 6h, 12h, or 3d at the default swing strength. Live checks confirm runtime and rendering on the observed windows, not broad pattern-recognition accuracy across every historical period.
 
 ## Installation
 
@@ -116,6 +116,7 @@ All six family switches default to **on**: **Double / Triple Top & Bottom**, **H
 | HH / HL / LH / LL | Off | Recent swing labels, including EQH/EQL for nearly equal swings. |
 | BOS / CHoCH | On | Recent structure-break lines and captions; neutral Break captions are hidden in Stories. |
 | Swing supply / demand zones | On | Valid swing-zone rendering. |
+| Zone source | 4H | Shared confirmed 4H zones; Chart restores the previous interval-specific behavior. |
 | Week / month levels | On | The five weekly/monthly reference levels. |
 | Confirmed swing trendline | On | A validated rising-support or falling-resistance swing line. |
 | EMA 200 | On | The 200-period close EMA and its label on the chart's timeframe. |

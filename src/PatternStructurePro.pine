@@ -21,6 +21,7 @@ bool showChannels = input.bool(true, "Channels / Rectangles", group=G_PATTERNS, 
 bool showSwings = input.bool(false, "HH / HL / LH / LL", group=G_STRUCT, display=display.none)
 bool showBreaks = input.bool(true, "BOS / CHoCH", group=G_STRUCT, display=display.none)
 bool showZones = input.bool(true, "Swing supply / demand zones", group=G_STRUCT, display=display.none)
+string zoneSource = input.string("4H", "Zone source", options=["4H", "Chart"], group=G_STRUCT, display=display.none, tooltip="4H keeps confirmed supply/demand price boundaries consistent on 1H, 2H, 4H and 1D. Chart restores interval-specific zones. Patterns, structure and EMA always use the chart interval.")
 bool showLevels = input.bool(true, "Week / month levels", group=G_STRUCT, display=display.none)
 bool showTrendline = input.bool(true, "Confirmed swing trendline", group=G_STRUCT, display=display.none)
 bool showEMA200 = input.bool(true, "EMA 200", group=G_CONTEXT, display=display.none, tooltip="200-period EMA of close on the chart interval. Shows closed candles only and shares the price chart. No signals or future extension.")
@@ -96,6 +97,15 @@ type Zone
     int detectedIndex
     bool touched
     bool valid
+
+    int originTime = na
+
+type ZoneSnapshot
+    array<Zone> stored
+    int sourceIndex
+    float referencePrice
+    float referenceATR
+    int closedAt
 
 type StructureEvent
     int originIndex
@@ -593,7 +603,7 @@ f_zoneFromSwing(Swing p) =>
         float width = f_clamp(rawWidth, 0.2 * p.atr, p.atr)
         float top = p.isHigh ? p.price : p.price + width
         float bottom = p.isHigh ? p.price - width : p.price
-        result := Zone.new((p.isHigh ? "S:" : "D:") + str.tostring(p.originIndex), not p.isHigh, top, bottom, p.atr, p.originIndex, p.detectedIndex, false, true)
+        result := Zone.new((p.isHigh ? "S:" : "D:") + str.tostring(p.originIndex), not p.isHigh, top, bottom, p.atr, p.originIndex, p.detectedIndex, false, true, p.originTime)
     result
 
 f_updateZones(array<Zone> stored, array<Swing> points, float closedPrice, float barHigh, float barLow, int currentIndex) =>
@@ -635,6 +645,38 @@ f_periodLevels() =>
     [wh, wl] = request.security(syminfo.tickerid, "W", [high[1], low[1]], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
     [mh, ml, mo] = request.security(syminfo.tickerid, "M", [high[1], low[1], open], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
     [weekAllowed ? wh : na, weekAllowed ? wl : na, weekAllowed ? (wh + wl) / 2.0 : na, monthAllowed ? (mh + ml) / 2.0 : na, monthAllowed ? mo : na]
+
+// Run the unchanged swing/zone rules in their own source context. Offset 1
+// uses only the preceding closed 4H candle for equal/higher-timeframe requests.
+// Offset 0 is used only by the Daily intrabar request; the caller checks close time.
+f_zoneSnapshot(int offset) =>
+    var array<Swing> sourceSwings = array.new<Swing>()
+    var array<Zone> sourceZones = array.new<Zone>()
+    float a = ta.atr(14)
+    float ph = ta.pivothigh(high, swingStrength, swingStrength)
+    float pl = ta.pivotlow(low, swingStrength, swingStrength)
+    float lowest = ta.lowest(low, swingStrength + 1)
+    float highest = ta.highest(high, swingStrength + 1)
+    int sourceIndex = bar_index - offset
+    bool ambiguous = not na(ph[offset]) and not na(pl[offset])
+    if not ambiguous and (not na(ph[offset]) or not na(pl[offset])) and not na(a[swingStrength + offset])
+        bool isHigh = not na(ph[offset])
+        float price = isHigh ? ph[offset] : pl[offset]
+        float departure = isHigh ? price - lowest[offset] : highest[offset] - price
+        Swing item = Swing.new(sourceIndex - swingStrength, time[swingStrength + offset], sourceIndex, price, isHigh, a[swingStrength + offset], open[swingStrength + offset], close[swingStrength + offset], departure, price - close[swingStrength + 12 + offset])
+        f_ingestSwing(sourceSwings, item)
+    while array.size(sourceSwings) > 0 and sourceIndex - array.get(sourceSwings, 0).originIndex > 300
+        array.shift(sourceSwings)
+    f_updateZones(sourceZones, sourceSwings, close[offset], high[offset], low[offset], sourceIndex)
+    // Only the recent snapshots are needed for the last-bar renderer. Bound
+    // collection copies instead of returning arrays over all historical bars.
+    ZoneSnapshot result = na
+    if last_bar_index - bar_index < 12
+        array<Zone> copy = array.new<Zone>()
+        for z in sourceZones
+            array.push(copy, z.copy())
+        result := ZoneSnapshot.new(copy, sourceIndex, close[offset], a[offset], time_close[offset])
+    result
 
 // Only the current presentation layer is drawn. No historical object accumulation.
 type Annotation
@@ -815,6 +857,7 @@ f_mergeVisualZone(array<Zone> chosen, Zone source) =>
             merged.top := math.max(merged.top, existing.top)
             merged.bottom := math.min(merged.bottom, existing.bottom)
             merged.originIndex := math.min(merged.originIndex, existing.originIndex)
+            merged.originTime := na(merged.originTime) ? existing.originTime : na(existing.originTime) ? merged.originTime : math.min(merged.originTime, existing.originTime)
             array.remove(chosen, i)
             i := 0
         else
@@ -822,19 +865,21 @@ f_mergeVisualZone(array<Zone> chosen, Zone source) =>
     array.push(chosen, merged)
     true
 
-f_renderZones(array<Zone> stored, int currentIndex, int limit) =>
+f_renderZones(array<Zone> stored, int currentIndex, int limit, int sourceIndex = na, float sourcePrice = na, float sourceATR = na, bool anchoredTime = false) =>
+    int ageIndex = nz(sourceIndex, currentIndex)
+    float referencePrice = nz(sourcePrice, close[bar_index - currentIndex])
+    float rangeATR = nz(sourceATR, currentATR)
     array<Zone> chosen = array.new<Zone>()
     int n = array.size(stored)
     if n > 0
         for offset = 0 to n - 1
             Zone z = array.get(stored, n - 1 - offset)
-            float referencePrice = close[bar_index - currentIndex]
-            float visibleRange = math.max(8.0 * nz(currentATR, z.atr), referencePrice * 0.06)
+            float visibleRange = math.max(8.0 * nz(rangeATR, z.atr), referencePrice * 0.06)
             bool relevant = viewMode != "Stories" or math.abs((z.top + z.bottom) / 2.0 - referencePrice) <= visibleRange
-            if z.valid and relevant and currentIndex - z.originIndex <= 300
+            if z.valid and relevant and ageIndex - z.originIndex <= 300
                 f_mergeVisualZone(chosen, z)
-    int demandIndex = f_primaryZoneIndex(chosen, true, close[bar_index - currentIndex])
-    int supplyIndex = f_primaryZoneIndex(chosen, false, close[bar_index - currentIndex])
+    int demandIndex = f_primaryZoneIndex(chosen, true, referencePrice)
+    int supplyIndex = f_primaryZoneIndex(chosen, false, referencePrice)
     int rendered = 0
     if array.size(chosen) > 0
         for i = 0 to array.size(chosen) - 1
@@ -844,9 +889,10 @@ f_renderZones(array<Zone> stored, int currentIndex, int limit) =>
                 color tone = z.isDemand ? demandColor : supplyColor
                 int alpha = math.min(95, zoneTransparency + (z.touched ? 4 : 0))
                 if array.size(drawBoxes) < 30
-                    array.push(drawBoxes, box.new(left=z.originIndex, top=z.top, right=currentIndex + zoneExtension, bottom=z.bottom, xloc=xloc.bar_index, border_color=color.new(tone, 100), border_width=1, bgcolor=color.new(tone, alpha)))
+                    int rightTime = time[bar_index - currentIndex] + int(timeframe.in_seconds() * 1000) * zoneExtension
+                    array.push(drawBoxes, box.new(left=anchoredTime ? z.originTime : z.originIndex, top=z.top, right=anchoredTime ? rightTime : currentIndex + zoneExtension, bottom=z.bottom, xloc=anchoredTime ? xloc.bar_time : xloc.bar_index, border_color=color.new(tone, 100), border_width=1, bgcolor=color.new(tone, alpha)))
                 string zoneName = z.isDemand ? "DEMAND ZONE" : annotationStyle == "Editorial" ? "RESISTANCE ZONE" : "SUPPLY ZONE"
-                f_placeText(math.max(z.originIndex, currentIndex + zoneExtension - 2), (z.top + z.bottom) / 2.0, zoneName, color.new(ink, 18), z.atr, z.isDemand ? -1 : 1, text.align_right, false, 70)
+                f_placeText(anchoredTime ? currentIndex + zoneExtension - 2 : math.max(z.originIndex, currentIndex + zoneExtension - 2), (z.top + z.bottom) / 2.0, zoneName, color.new(ink, 18), z.atr, z.isDemand ? -1 : 1, text.align_right, false, 70)
                 rendered += 1
     true
 
@@ -943,6 +989,20 @@ f_renderStructure(array<Swing> points, array<StructureEvent> storedEvents, int c
                 previousLow := p.price
     true
 
+// Shared 4H zone context, independent of chart pivots and chart ATR.
+ZoneSnapshot sharedZones = na
+if zoneSource == "4H"
+    if timeframe.in_seconds() <= 14400
+        sharedZones := request.security(syminfo.tickerid, "240", f_zoneSnapshot(1), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on, calc_bars_count=650)
+    else
+        array<ZoneSnapshot> intrabars = request.security_lower_tf(syminfo.tickerid, "240", f_zoneSnapshot(0), calc_bars_count=650)
+        for snapshot in intrabars
+            if not na(snapshot) and snapshot.closedAt <= timenow
+                sharedZones := snapshot
+        // A newly opened Daily candle can have no closed intrabars yet.
+        if na(sharedZones)
+            sharedZones := sharedZones[1]
+
 float pivotHigh = ta.pivothigh(high, swingStrength, swingStrength)
 float ema200 = ta.ema(close, 200)
 float pivotLow = ta.pivotlow(low, swingStrength, swingStrength)
@@ -1009,7 +1069,11 @@ if barstate.islast
     if showLevels
         f_renderLevel(previousWeekHigh, annotationStyle == "Editorial" ? "WEEKLY RESISTANCE" : "PREV WEEK HIGH", math.max(weekAvailableFrom, displayIndex - 100), displayIndex, true, presentationATR)
     if showZones
-        f_renderZones(zones, displayIndex, viewMode == "Stories" ? 4 : 8)
+        if zoneSource == "4H"
+            if not na(sharedZones)
+                f_renderZones(sharedZones.stored, displayIndex, viewMode == "Stories" ? 4 : 8, sharedZones.sourceIndex, sharedZones.referencePrice, sharedZones.referenceATR, true)
+        else
+            f_renderZones(zones, displayIndex, viewMode == "Stories" ? 4 : 8)
     f_renderStructure(swings, events, displayIndex, presentationATR)
     if showLevels
         int weekStart = math.max(weekAvailableFrom, displayIndex - 100)
@@ -1029,6 +1093,8 @@ if barstate.islast
         note += "\nSupported: 1H · 2H · 4H · 1D"
     else if viewMode == "Analysis"
         note += "\nConfirmed swings · " + str.tostring(swingStrength) + " bars (" + swingDelay + ") · " + displayTrend
+    if viewMode == "Analysis" and showZones
+        note += "\nZones · " + (zoneSource == "4H" ? "4H confirmed" : intervalName)
     if not chart.is_standard
         note += "\nSynthetic candles change geometry"
     if viewMode == "Analysis" and timeframe.in_seconds() > timeframe.in_seconds("W")
