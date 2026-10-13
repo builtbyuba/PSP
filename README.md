@@ -1,6 +1,6 @@
 # Pattern Structure Pro (PSP)
 
-Pattern Structure Pro is a TradingView Pine Script v6 indicator that brings chart patterns, swing structure, and price context into one considered layout. It is designed around standard 4H candlestick charts, with a clean **Stories** view for sharing analysis and a more detailed **Analysis** view for examining it.
+Pattern Structure Pro is a TradingView Pine Script v6 indicator that brings chart patterns, swing structure, and price context into one considered layout. It supports standard **1H, 2H, 4H, and 1D** candlestick charts, with a clean **Stories** view for sharing analysis and a more detailed **Analysis** view for examining it.
 
 ## Overview
 
@@ -22,7 +22,16 @@ There are no BUY/SELL calls, projected price paths, entries, stops, targets, or 
 
 ### Reference points and detection
 
-The engine uses confirmed pivot highs and lows with equal left- and right-hand strength. With the default strength of **3**, a swing requires three later candles to close—at least **12 hours on 4H**. Ambiguous candles that qualify as both a high and a low are skipped. Consecutive same-side swings retain the more extreme point, producing an alternating swing sequence. ATR(14) supplies the price scale for tolerances.
+The engine uses confirmed pivot highs and lows with equal left- and right-hand strength. With the default strength of **3**, a swing requires three later candles to close. Ambiguous candles that qualify as both a high and a low are skipped. Consecutive same-side swings retain the more extreme point, producing an alternating swing sequence. ATR(14) supplies the price scale for tolerances on the current chart interval.
+
+| Chart interval | Default swing confirmation | ATR and EMA inputs |
+| --- | --- | --- |
+| 1H | 3 closed bars / 3 hours | 1H candles |
+| 2H | 3 closed bars / 6 hours | 2H candles |
+| 4H | 3 closed bars / 12 hours | 4H candles |
+| 1D | 3 closed bars / 3 trading days | Daily candles |
+
+Switching the chart interval automatically recalculates the entire engine on that interval. Geometry windows, expiry, and confirmation are measured in **bars**, while price tolerances use that interval's ATR; they are not forced into a fixed 4H wall-clock duration. The 4H detection thresholds are preserved. Analysis captions show both the bar delay and its interval duration. For markets with session gaps, three daily bars can take longer than three calendar days.
 
 Reversal candidates compare three or five anchors for matching extremes, adequate intervening depth, prior price context, and—for head and shoulders—head prominence and shoulder timing. Double Top/Bottom detection also searches across minor intervening swings while rejecting an overtopping extreme or a separate central third contact.
 
@@ -54,7 +63,7 @@ PSP redraws the current selection rather than retaining every historical drawing
 
 ## Screenshots
 
-Both images were captured on **13 October 2026**, directly in TradingView through the **Codex browser**, using the unchanged production source on BITGET:BTCUSDT 4H. Browser screenshot clipping removes surrounding panels and toolbars; candles, price axes, labels, and drawings are unchanged. No patterns were manually added, and no outdated images are included.
+The images were captured on **13 October 2026**, directly in TradingView through the **Codex browser**, using the production source on BITGET:BTCUSDT. Browser screenshot clipping removes surrounding panels and toolbars; candles, price axes, labels, and drawings are unchanged. No patterns were manually added.
 
 ### Stories
 
@@ -68,9 +77,15 @@ Compact pattern names and proportionate historical arches keep the structure rea
 
 The same market window in Analysis view shows anchor geometry, a Double Top marked Returned inside, and a symmetrical triangle marked Confirmed · downward break. Captions include detection time and a three-bar swing delay. The two modes can select different candidates from the same detection engine because their presentation priorities differ.
 
+### Other supported intervals
+
+[1H Analysis](assets/screenshots/psp-1h-analysis.jpg) · [2H Analysis](assets/screenshots/psp-2h-analysis.jpg) · [1D Analysis](assets/screenshots/psp-1d-analysis.jpg)
+
+These capture the same engine recalculated on each chart interval. A current window can legitimately have no selected pattern; the structure, zones, levels, and EMA still provide context. Confirmation timing is 3h, 6h, 12h, or 3d at the default swing strength. Live checks confirm runtime and rendering on the observed windows, not broad pattern-recognition accuracy across every historical period.
+
 ## Installation
 
-1. Open a standard candlestick chart in TradingView and select **4H**.
+1. Open a standard candlestick chart in TradingView and select **1H, 2H, 4H, or 1D**.
 2. Open [`src/PatternStructurePro.pine`](src/PatternStructurePro.pine) and copy the entire file.
 3. Open TradingView's **Pine Editor**, create a new indicator, and replace its template with the copied source.
 4. Save the script privately and select **Add to chart**.
@@ -80,7 +95,7 @@ For clean exports, close the editor and side panels, move the pointer outside th
 
 ## Settings
 
-### Detection · 4H
+### Detection
 
 | Input | Default | Controls |
 | --- | --- | --- |

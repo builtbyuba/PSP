@@ -2,12 +2,12 @@
 indicator("Pattern Structure Pro", "Pattern Structure Pro", overlay=true, max_bars_back=600, max_lines_count=150, max_boxes_count=30, max_labels_count=80, max_polylines_count=12)
 
 // Automatic market-structure visualization. No forecasts, entries or targets.
-string G_ENGINE = "Detection • 4H"
+string G_ENGINE = "Detection"
 string G_PATTERNS = "Pattern families"
 string G_STRUCT = "Market structure"
 string G_CONTEXT = "Trend context"
 string G_STYLE = "Presentation"
-int swingStrength = input.int(3, "Confirmed swing strength", minval=2, maxval=10, group=G_ENGINE, tooltip="3 right-hand bars mean at least 12 hours of confirmation delay on a 4H chart.", display=display.none)
+int swingStrength = input.int(3, "Confirmed swing strength", minval=2, maxval=10, group=G_ENGINE, tooltip="Closed bars required to the right of a pivot. Default 3: 3h on 1H, 6h on 2H, 12h on 4H, and 3 days on 1D. Geometry and ATR use the current chart interval.", display=display.none)
 float equalTolerance = input.float(0.40, "Matching levels • ATR", minval=0.1, maxval=1.0, step=0.05, group=G_ENGINE, display=display.none)
 float touchTolerance = input.float(0.35, "Boundary contact • ATR", minval=0.1, maxval=0.8, step=0.05, group=G_ENGINE, display=display.none)
 float breakTolerance = input.float(0.15, "Closed-bar break • ATR", minval=0.05, maxval=0.5, step=0.05, group=G_ENGINE, display=display.none)
@@ -32,6 +32,16 @@ string textChoice = input.string("Normal", "Text size", options=["Small", "Norma
 int zoneTransparency = input.int(82, "Zone transparency", minval=65, maxval=95, group=G_STYLE, display=display.none)
 int zoneExtension = input.int(30, "Zone / level extension • bars", minval=0, maxval=40, group=G_STYLE, display=display.none, tooltip="Extends existing horizontal zones and levels into the right margin. Match the chart right margin to about 35 bars. No projected price path.")
 bool showBrand = input.bool(true, "Compact title", group=G_STYLE, display=display.none)
+
+// Candle-based geometry and ATR adapt to the chart interval. Keep temporal
+// context explicit without changing the established 4H detection thresholds.
+f_timeframeContext(float seconds, int bars, string fallback) =>
+    bool supported = not na(seconds) and (seconds == 3600 or seconds == 7200 or seconds == 14400 or seconds == 86400)
+    string name = seconds == 3600 ? "1H" : seconds == 7200 ? "2H" : seconds == 14400 ? "4H" : seconds == 86400 ? "1D" : fallback
+    string delay = supported ? (seconds == 86400 ? str.tostring(bars) + "d" : str.tostring(int(seconds / 3600) * bars) + "h") : str.tostring(bars) + " bars"
+    [supported, name, delay]
+
+[supportedInterval, intervalName, swingDelay] = f_timeframeContext(timeframe.in_seconds(), swingStrength, timeframe.period)
 
 bool darkPalette = palette == "Dark" or (palette == "Auto" and color.r(chart.bg_color) + color.g(chart.bg_color) + color.b(chart.bg_color) < 384)
 color ink = darkPalette ? color.rgb(219, 223, 225) : color.rgb(44, 47, 49)
@@ -778,7 +788,8 @@ f_renderPatterns(array<Pattern> stored, array<int> selected, int currentIndex) =
         if viewMode == "Analysis"
             int detectionOffset = bar_index - p.detectedIndex
             int detectionTime = detectionOffset >= 0 and detectionOffset <= 300 ? time[detectionOffset] : na
-            caption += "\n" + str.format_time(detectionTime, "dd MMM HH:mm", syminfo.timezone) + " · +" + str.tostring(p.detectedIndex - p.endIndex) + " bars"
+            [detectionSupported, detectionInterval, detectionDelay] = f_timeframeContext(timeframe.in_seconds(), p.detectedIndex - p.endIndex, timeframe.period)
+            caption += "\n" + str.format_time(detectionTime, "dd MMM HH:mm", syminfo.timezone) + " · +" + str.tostring(p.detectedIndex - p.endIndex) + " bars (" + detectionDelay + ")"
         f_placeText(middle, p.extremeHigh + p.atr * 0.85, caption, ink, p.atr, 1, text.align_center, true, 100)
     true
 
@@ -1012,13 +1023,12 @@ if barstate.islast
         f_placeText(displayIndex + 10, confirmedEMA, "EMA 200", emaColor, presentationATR, 1, text.align_right, false, 55)
     f_flushText()
     [displayTrend, displayHigh, displayLow] = f_marketStructure(swings, presentationATR)
-    string intervalName = timeframe.period == "240" ? "4H" : timeframe.period
     string title = showBrand ? "PATTERN STRUCTURE PRO" : ""
     string note = showBrand ? syminfo.ticker + "  ·  " + intervalName : ""
-    if timeframe.period != "240"
-        note += "\nOptimized for 4H"
+    if not supportedInterval
+        note += "\nSupported: 1H · 2H · 4H · 1D"
     else if viewMode == "Analysis"
-        note += "\nConfirmed swings · " + str.tostring(swingStrength) + " bars delay · " + displayTrend
+        note += "\nConfirmed swings · " + str.tostring(swingStrength) + " bars (" + swingDelay + ") · " + displayTrend
     if not chart.is_standard
         note += "\nSynthetic candles change geometry"
     if viewMode == "Analysis" and timeframe.in_seconds() > timeframe.in_seconds("W")
