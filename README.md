@@ -2,6 +2,8 @@
 
 Pattern Structure Pro is a TradingView Pine Script v6 indicator that brings chart patterns, swing structure, and price context into one considered layout. It supports standard **1H, 2H, 4H, and 1D** candlestick charts, with **Analysis** as the primary view for examining structure and a clean **Stories** view for sharing it.
 
+[Use Pattern Structure Pro on TradingView](https://www.tradingview.com/script/k8GKqEKW-Pattern-Structure-Pro/)
+
 ## Overview
 
 ![PSP Analysis view on BTCUSDT 4H](assets/screenshots/psp-analysis.jpg)
@@ -59,11 +61,11 @@ Detection and state transitions run on closed bars. Pattern geometry is stored w
 
 **Closed-bar processing does not mean an annotation was available at its historical anchor.** A newly detected pattern is drawn back over the candles that formed it, after swing confirmation. Analysis captions show the final anchor's detection time and confirmation delay. The most recent same-side swing can be replaced before a later opposite swing arrives, and the selected drawings can change as new data arrives.
 
-PSP redraws the current selection rather than retaining every historical drawing. Scrolling back alone does not reconstruct what was visible at that earlier moment. Data-feed corrections, changed settings, and different timeframes can change a recalculated chart. 
+PSP redraws the current selection rather than retaining every historical drawing. Scrolling back alone does not reconstruct what was visible at that earlier moment. Data-feed corrections, changed settings, and different timeframes can change a recalculated chart.
 
 ## Screenshots
 
-The images were captured on **13 October 2026**, directly in TradingView, using the production source on BITGET:BTCUSDT. Browser screenshot clipping removes surrounding panels and toolbars; candles, price axes, labels, and drawings are unchanged. No patterns were manually added. Screenshots reflect the shared 4H zone version.
+The images were captured on **13–14 October 2026**, directly in TradingView, using the production source on BITGET:BTCUSDT. Browser screenshot clipping removes surrounding panels and toolbars; candles, price axes, labels, and drawings are unchanged. No patterns were manually added. Screenshots reflect the shared 4H zone version. The 4H Analysis image was refreshed on 14 October using a warm off-white background and PSP as the only visible indicator.
 
 ### Stories
 
@@ -146,4 +148,4 @@ PSP supports technical analysis and does not provide financial advice. Trading i
 
 ## License
 
-[MIT License](LICENSE). Copyright (c) 2026 builtbyuba.
+[MIT License](LICENSE). Copyright (c) 2026 builtbyuba. Contributions and suggestions are welcome.
