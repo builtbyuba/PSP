@@ -59,7 +59,7 @@ Detection and state transitions run on closed bars. Pattern geometry is stored w
 
 **Closed-bar processing does not mean an annotation was available at its historical anchor.** A newly detected pattern is drawn back over the candles that formed it, after swing confirmation. Analysis captions show the final anchor's detection time and confirmation delay. The most recent same-side swing can be replaced before a later opposite swing arrives, and the selected drawings can change as new data arrives.
 
-PSP redraws the current selection rather than retaining every historical drawing. Scrolling back alone does not reconstruct what was visible at that earlier moment. Data-feed corrections, changed settings, and different timeframes can change a recalculated chart. These distinctions matter when assessing repainting or reviewing examples after the event.
+PSP redraws the current selection rather than retaining every historical drawing. Scrolling back alone does not reconstruct what was visible at that earlier moment. Data-feed corrections, changed settings, and different timeframes can change a recalculated chart. 
 
 ## Screenshots
 
@@ -146,6 +146,4 @@ PSP supports technical analysis and does not provide financial advice. Trading i
 
 ## License
 
-Required Notice: Copyright © 2026 builtbyuba.
-
-The existing noncommercial licensing choice is retained: [PolyForm Noncommercial License 1.0.0](LICENSE). It does not grant permission to sell PSP or use it for purposes outside the license's permitted terms. Separate permission is required for commercial licensing. The repository is public for inspection and permitted noncommercial use. Public availability does not remove the noncommercial license or grant resale rights.
+[MIT License](LICENSE). Copyright (c) 2026 builtbyuba.
